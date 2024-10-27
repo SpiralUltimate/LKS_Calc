@@ -8,6 +8,27 @@ from custom_math_exec import CustomExec
 class Application:
     def __init__(self) -> None:
         self.currentMode = DEFAULT_MODE
+        
+    def handleMathMode(self, userInput: str):
+        try:
+            for command in customMathCommands:
+                if command in userInput:
+                    self.containsCommand = True
+                    
+            if not self.containsCommand:
+                namespace = {}
+                exec(f"x = {userInput}", namespace)
+                print(namespace["x"])
+            else:
+                print(CustomExec(userInput).get_return())    
+        except Exception as e:
+            print(f"Error: {e}")
+            
+            if DEBUG:
+                log(f'Check if you added the "{userInput.split(" ")[0]}" ' + 
+                      'command to your CUSTOM_MATH_COMMANDS list and also updated ' +
+                      'your command map.'
+                      )
     
     def executeWindowsCommand(self, command: str):
         try:
@@ -21,33 +42,37 @@ class Application:
     
     def run(self):
         while True:
-            containsCommand = False
+            self.containsCommand = False
             userInput: str = input("<< ")
             
             # Allows our user to execute windows functions in math mode.
-            if userInput.startswith("wx") and self.currentMode == TerminalModes.MATH:
-                userInput = userInput.replace("wx", "")
+            if userInput.startswith(SpecialKeys.WINDOWS_HYBRID_EXEC_KEY.value) and self.currentMode == TerminalModes.MATH:
+                userInput = userInput.replace(SpecialKeys.WINDOWS_HYBRID_EXEC_KEY.value, "")
                 self.executeWindowsCommand(userInput)
                 continue
             
             # Switches mode to windows mode if not already in windows mode.
             # Windows mode allows for execution of bash commands in our terminal.
-            if userInput == "w" and self.currentMode != TerminalModes.WINDOWS:
-                os.system(userInput.replace("w", ""))
+            if userInput == ModeKeys.WINDOWS_KEY.value and self.currentMode != TerminalModes.WINDOWS:
+                os.system(userInput.replace(ModeKeys.WINDOWS_KEY.value, ""))
                 self.currentMode = TerminalModes.WINDOWS
                 
                 # Tells our user Windows Mode is activated.
+                print(Fore.GREEN)
                 print("Windows Mode Activated!")
+                print(Fore.RESET)
                 
                 continue
                 
             # Switching back to math mode if we are in windows mode.
-            if userInput == "m" and self.currentMode != TerminalModes.MATH:
-                os.system(userInput.replace("m", ""))
+            if userInput == ModeKeys.MATH_KEY.value and self.currentMode != TerminalModes.MATH:
+                os.system(userInput.replace(ModeKeys.WINDOWS_KEY.value, ""))
                 self.currentMode = TerminalModes.MATH
                 
                 # Tells our user Math Mode is activated.
+                print(Fore.GREEN)
                 print("Math Mode Activated!")
+                print(Fore.RESET)
                 
                 continue
             
@@ -56,19 +81,8 @@ class Application:
             
             if self.currentMode == TerminalModes.WINDOWS:
                 self.executeWindowsCommand(userInput)
+                continue
             
             elif self.currentMode == TerminalModes.MATH:
-                try:
-                    for command in CUSTOM_COMMANDS:
-                        if command in userInput:
-                            containsCommand = True
-                    
-                    if not containsCommand:
-                        namespace = {}
-                        exec(f"x = {userInput}", namespace)
-                        print(namespace["x"])
-                    else:
-                        print(CustomExec(userInput).get_return())    
-                except Exception as e:
-                    print(f"Error: {e}")
-                    continue
+                self.handleMathMode(userInput)
+                continue

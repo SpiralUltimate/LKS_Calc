@@ -2,5 +2,8 @@ import os
 
 from application import Application
 
-while True:
+def main():
     Application().run()
+    
+if __name__ == "__main__":
+    main()
